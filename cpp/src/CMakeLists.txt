@@ -2,4 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 project(PulseAudioWavDemo)
 
-add_executable(PulseAudioWavDemo main.c)
+add_executable(PulseAudioWavDemo main.cpp yswavfile.cpp)
+
+target_include_directories(PulseAudioWavDemo PUBLIC "${PROJECT_BINARY_DIR}")
