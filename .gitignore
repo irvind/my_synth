@@ -1,0 +1,6 @@
+.vscode/
+.ipynb_checkpoints/
+cmake_tutorial/
+__pycache__
+
+pulseAudioSample-20120219-R1069.zip
