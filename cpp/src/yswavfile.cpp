@@ -314,44 +314,44 @@ YSRESULT YsWavFile::ConvertTo8Bit(void)
     return YSERR;
 }
 
+/**
+ * Converts the mono wav data buffer to stereo format.
+ * 
+ * @return YSRESULT success status code
+*/
 YSRESULT YsWavFile::ConvertToStereo()
 {
     if (stereo == YSTRUE)
         return YSOK;
-    
-    else
+    if (bit != 8 && bit != 16)
+        return YSERR;
+
+    unsigned char *newDat = new unsigned char[sizeInBytes*2];
+    if(bit == 8)
     {
-        if(bit==8)
+        for (int i = 0; i < sizeInBytes; i++) 
         {
-            unsigned char *newDat=new unsigned char [sizeInBytes*2];
-            for(int i=0; i<sizeInBytes; i++)
-            {
-                newDat[i*2  ]=dat[i];
-                newDat[i*2+1]=dat[i];
-            }
-            delete [] dat;
-            dat=newDat;
-            stereo=YSTRUE;
-            sizeInBytes*=2;
-            return YSOK;
-        }
-        else if(bit==16)
-        {
-            unsigned char *newDat=new unsigned char [sizeInBytes*2];
-            for(int i=0; i<sizeInBytes; i+=2)
-            {
-                newDat[i*2  ]=dat[i];
-                newDat[i*2+1]=dat[i+1];
-                newDat[i*2+2]=dat[i];
-                newDat[i*2+3]=dat[i+1];
-            }
-            dat=newDat;
-            stereo=YSTRUE;
-            sizeInBytes*=2;
-            return YSOK;
+            newDat[i*2] = dat[i];
+            newDat[i*2+1] = dat[i];
         }
     }
-    return YSERR;
+    else    // bit == 16
+    {
+        for(int i = 0; i < sizeInBytes; i += 2)
+        {
+            newDat[i*2] = dat[i];
+            newDat[i*2+1] = dat[i+1];
+            newDat[i*2+2] = dat[i];
+            newDat[i*2+3] = dat[i+1];
+        }
+    }
+    
+    delete[] dat;
+    dat = newDat;
+    stereo = YSTRUE;
+    sizeInBytes *= 2;
+
+    return YSOK;
 }
 
 YSRESULT YsWavFile::Resample(int newRate)
