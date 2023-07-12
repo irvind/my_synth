@@ -260,31 +260,35 @@ ERREND:
 	return YSERR;
 }
 
-
-YSRESULT YsWavFile::ConvertTo16Bit(void)
+/**
+ * Converts the 8-bit wav data buffer to 16-bit format.
+ * 
+ * @return YSRESULT success status code
+ */
+YSRESULT YsWavFile::ConvertTo16Bit()
 {
-	if(bit==16)
-	{
+    if (bit == 16)	
 		return YSOK;
-	}
-	else if(bit==8)
-	{
-		if(sizeInBytes>0 && dat!=NULL)
-		{
-			unsigned char *newDat=new unsigned char [sizeInBytes*2];
-			for(int i=0; i<sizeInBytes; i++)
-			{
-				newDat[i*2]  =dat[i];
-				newDat[i*2+1]=dat[i];
-			}
-			delete [] dat;
-			dat=newDat;
+    if (bit != 8)
+        return YSERR;
 
-			sizeInBytes*=2;
-			bit=16;
-		}
-		return YSOK;
-	}
+    // bit == 8
+    if (sizeInBytes == 0 || dat == NULL)
+        return YSOK;
+
+    unsigned char *newDat = new unsigned char[sizeInBytes*2];
+    for (int i = 0; i < sizeInBytes; i++)
+	{
+        newDat[i*2] = dat[i];
+        newDat[i*2+1] = dat[i];
+			}
+
+    delete[] dat;
+    dat = newDat;
+
+    sizeInBytes *= 2;
+    bit = 16;
+
 	return YSERR;
 }
 
