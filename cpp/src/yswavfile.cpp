@@ -567,7 +567,7 @@ size_t YsWavFile::GetSamplePosition(int atIndex) const
     return atIndex*GetNumChannel()*(bit/8);
 }
 
-int YsWavFile::GetSignedValue(int atTimeStep,int channel) const
+int YsWavFile::GetSignedValue(int atTimeStep, int channel) const
 {
     const size_t sampleIdx=GetSamplePosition(atTimeStep);
     const size_t unitSize=GetUnitSize();
