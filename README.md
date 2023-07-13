@@ -14,6 +14,7 @@ About WAV:
 * https://en.wikipedia.org/wiki/WAV
 * https://docs.fileformat.com/audio/wav/
 * https://en.wikipedia.org/wiki/Pulse-code_modulation
+* https://stackoverflow.com/questions/10731226/how-to-determine-if-8bit-wav-file-is-signed-or-unsigned-using-java-and-without
 
 
 Hex converter
