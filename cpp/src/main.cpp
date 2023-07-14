@@ -1,5 +1,10 @@
 #include <iostream>
 #include <cstdio>
+// #include <cassert>
+
+#include <pulse/mainloop.h>
+#include <pulse/context.h>
+
 #include "yswavfile.h"
 
 int toSigned16Bit(unsigned char leastByte, unsigned char mostByte)
@@ -46,26 +51,59 @@ void printUnsignedSignedValues()
     printf("num2 - %d\n", num2);
 }
 
-int main(int argc, char* argv[])
+YsWavFile* getWavFileFromCmdLine(int argc, char* argv[])
 {
     if (argc < 2)
     {
         std::cout << "Audio file is required" << std::endl;
-        return 1;
+        return NULL;
     }
 
-    YsWavFile wavFile;
-    YSRESULT loadResult = wavFile.LoadWav(argv[1]);
+    YsWavFile *wavFile = new YsWavFile();
+    YSRESULT loadResult = wavFile->LoadWav(argv[1]);
     if(loadResult != YSOK)
     {
+        delete wavFile;
         std::cout << "Error occured during wav file parsing" << std::endl;
-        return 1;
+        return NULL;
     }
+
+    return wavFile;
+}
+
+int main(int argc, char* argv[])
+{
+    YsWavFile *wavFile = getWavFileFromCmdLine(argc, argv);
+    if (wavFile == NULL)
+        return 1;
 
     std::cout << "WAV file has been parsed" << std::endl;
 
-    printWavDataPositions(&wavFile, 500);
+    // printWavDataPositions(&wavFile, 500);
     // printUnsignedSignedValues();
+
+    pa_mainloop *mainLoop = pa_mainloop_new();
+    if (!mainLoop)
+    {
+        std::cout << "Cannot create PulseAudio mainloop" << std::endl;
+        delete wavFile;
+        return 1;
+    }
+
+    pa_context *context = pa_context_new(pa_mainloop_get_api(mainLoop), "PulseAudioDemoApp");
+    if (!context)
+    {
+        std::cout << "Cannot create PulseAudio context" << std::endl;
+        pa_mainloop_free(mainLoop);
+        delete wavFile;
+        return 1;
+    }
+
+    // TODO
+
+    pa_context_unref(context);
+    pa_mainloop_free(mainLoop);
+    delete wavFile;
 
     return 0;
 }
