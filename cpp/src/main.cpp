@@ -1,9 +1,11 @@
 #include <iostream>
 #include <cstdio>
-// #include <cassert>
+#include <ctime>
+#include <cassert>
 
 #include <pulse/mainloop.h>
 #include <pulse/context.h>
+#include <pulse/stream.h>
 
 #include "yswavfile.h"
 
@@ -71,6 +73,29 @@ YsWavFile* getWavFileFromCmdLine(int argc, char* argv[])
     return wavFile;
 }
 
+void freeResources(
+    pa_mainloop *mainLoop,
+    pa_context *context,
+    pa_stream *stream,
+    YsWavFile *wavFile,
+    bool disconnectStream,
+    bool disconnectContext
+)
+{
+    if (wavFile == NULL)
+        delete wavFile;
+    if (disconnectStream)
+        pa_stream_disconnect(stream);
+    if (stream != NULL)
+        pa_stream_unref(stream);
+    if (disconnectContext)
+        pa_context_disconnect(context);
+    if (context != NULL)
+        pa_context_unref(context);
+    if (mainLoop != NULL)
+        pa_mainloop_free(mainLoop);
+}
+
 int main(int argc, char* argv[])
 {
     YsWavFile *wavFile = getWavFileFromCmdLine(argc, argv);
@@ -83,27 +108,141 @@ int main(int argc, char* argv[])
     // printUnsignedSignedValues();
 
     pa_mainloop *mainLoop = pa_mainloop_new();
-    if (!mainLoop)
+    if (mainLoop == NULL)
     {
         std::cout << "Cannot create PulseAudio mainloop" << std::endl;
-        delete wavFile;
+        freeResources(NULL, NULL, NULL, wavFile, false, false);
         return 1;
     }
 
     pa_context *context = pa_context_new(pa_mainloop_get_api(mainLoop), "PulseAudioDemoApp");
-    if (!context)
+    if (context == NULL)
     {
         std::cout << "Cannot create PulseAudio context" << std::endl;
-        pa_mainloop_free(mainLoop);
-        delete wavFile;
+        freeResources(mainLoop, NULL, NULL, wavFile, false, false);
         return 1;
     }
 
-    // TODO
+    if (pa_context_connect(context, NULL, (pa_context_flags_t)0, NULL) < 0)
+    {
+        std::cout << "Cannot connect context to default server" << std::endl;
+        freeResources(mainLoop, context, NULL, wavFile, false, false);
+        return 1;
+    }
 
-    pa_context_unref(context);
-    pa_mainloop_free(mainLoop);
-    delete wavFile;
+    bool contextIsReady = false;
+    time_t readyTimeLimit = time(NULL) + 30;
+	while (time(NULL) <= readyTimeLimit)
+    {
+        pa_mainloop_iterate(mainLoop, 0, NULL);
+        pa_context_state_t state = pa_context_get_state(context);
+        // std::cout << "state: " << state << std::endl;
+        if (state == PA_CONTEXT_READY)
+		{
+            contextIsReady = true;
+            break;
+		}
+    }
+
+    if (!contextIsReady)
+    {
+        std::cout << "PulseAudio context is not ready" << std::endl;
+        freeResources(mainLoop, context, NULL, wavFile, false, true);
+        return 1;
+    }
+
+    pa_sample_format_t format;
+    switch(wavFile->BitPerSample())
+    {
+    case 8:
+        format = PA_SAMPLE_U8;
+        break;
+    case 16:
+        format = PA_SAMPLE_S16LE;
+        break;
+    default:
+        std::cout << "Bit size must be 8 or 16" << std::endl;
+        freeResources(mainLoop, context, NULL, wavFile, false, false);
+        return 1;
+    }
+
+     pa_sample_spec sampleSpec = {
+        format,
+        wavFile->PlayBackRate(),                                // Rate, Ex: 44Hz
+        (unsigned char)(wavFile->Stereo() == YSTRUE ? 2 : 1)    // Channels, Ex: 1 or 2
+    };
+
+    pa_stream *stream = pa_stream_new(context, "DemoStream", &sampleSpec, NULL);
+    if (stream == NULL)
+    {
+        std::cout << "Cannot create PulseAudio stream" << std::endl;
+        freeResources(mainLoop, context, NULL, wavFile, false, true);
+        return 1;
+    }
+
+    if (pa_stream_connect_playback(stream, NULL, NULL, (pa_stream_flags_t)0, NULL, NULL) != 0)
+    {
+        std::cout << "Cannot connect PulseAudio stream to the sink" << std::endl;
+        freeResources(mainLoop, context, stream, wavFile, false, true);
+        return 1;
+    }
+
+    // const time_t startTime = time(NULL);
+    // bool mainLoopFirst = true;
+    // pa_stream_state_t prevState;
+    // int logIdx = 0;
+    unsigned int playbackPtr = 0;
+    double progress = -1;
+
+    while (1)
+    {
+        // if (time(NULL) >= startTime + 30)
+        //     break;
+
+        double newProgress = ((double)playbackPtr / (double)wavFile->SizeInByte()) * 100;
+        if (newProgress > progress + 1) {
+            progress = newProgress;
+            printf("progress: %.0lf%%\n", progress);
+        }
+        if (playbackPtr >= wavFile->SizeInByte())
+            break;
+
+        pa_stream_state_t state = pa_stream_get_state(stream);
+
+        // assert(PA_STREAM_IS_GOOD(state));
+        // if (mainLoopFirst || state != prevState)
+        //    std::cout << "state: " << state << std::endl;
+        // mainLoopFirst = false;
+        // prevState = state;
+
+        if (state == PA_STREAM_READY)
+        {
+            const size_t writableSize = pa_stream_writable_size(stream);
+            // if (writableSize != 0) {
+            //     std::cout << logIdx << ", writableSize: " << writableSize << std::endl;
+            //     logIdx++;
+            // }
+
+            const size_t sizeRemain = wavFile->SizeInByte() - playbackPtr;
+            const size_t writeSize = (sizeRemain < writableSize ? sizeRemain : writableSize);
+            if (writeSize > 0)
+            {
+                pa_stream_write(
+                    stream,
+                    wavFile->DataPointer() + playbackPtr,
+                    writeSize,
+                    NULL,
+                    0,
+                    PA_SEEK_RELATIVE
+                );
+                playbackPtr += writeSize;
+            }
+        }
+
+        pa_mainloop_iterate(mainLoop, 0, NULL);
+    }
+
+    freeResources(mainLoop, context, stream, wavFile, true, true);
 
     return 0;
 }
