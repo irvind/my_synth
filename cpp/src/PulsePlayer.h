@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <pulse/mainloop.h>
+#include <pulse/thread-mainloop.h>
 #include <pulse/context.h>
 #include <pulse/stream.h>
 
@@ -18,7 +19,7 @@ public:
 class PulsePlayer
 {
 private:
-    pa_mainloop* mainLoop;
+    pa_threaded_mainloop* mainLoop;
     pa_context* context;
     pa_stream* stream;
     bool contextIsConnected;
@@ -36,6 +37,6 @@ public:
         unsigned int sizeInBytes, const unsigned char *dataPointer);
     void Free();
 
-    pa_mainloop* getMainLoop();
+    pa_threaded_mainloop* getMainLoop();
     pa_context* getContext();
 };

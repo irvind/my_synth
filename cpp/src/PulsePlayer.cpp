@@ -27,11 +27,14 @@ PulsePlayer::~PulsePlayer()
 
 void PulsePlayer::Initialize()
 {
-    mainLoop = pa_mainloop_new();
+    mainLoop = pa_threaded_mainloop_new();
     if (mainLoop == NULL)
         throw PulsePlayerError("Cannot create PulseAudio mainloop");
 
-    context = pa_context_new(pa_mainloop_get_api(mainLoop), "PulseAudioDemoApp");
+    if (pa_threaded_mainloop_start(mainLoop) != 0)
+        throw PulsePlayerError("Cannot start mainLoop thread");
+
+    context = pa_context_new(pa_threaded_mainloop_get_api(mainLoop), "PulseAudioDemoApp");
     if (context == NULL)
         throw PulsePlayerError("Cannot create PulseAudio context");
 
@@ -48,7 +51,6 @@ void PulsePlayer::WaitForContextConnect()
     time_t readyTimeLimit = time(NULL) + 30;
 
     while (time(NULL) <= readyTimeLimit) {
-        pa_mainloop_iterate(mainLoop, 0, NULL);
         pa_context_state_t state = pa_context_get_state(context);
         if (state == PA_CONTEXT_READY) {
             contextIsReady = true;
@@ -94,6 +96,8 @@ void PulsePlayer::PlaybackLoop(unsigned int sizeInBytes, const unsigned char *da
         if (playbackPtr >= sizeInBytes)
             break;
 
+        pa_threaded_mainloop_lock(mainLoop);
+
         pa_stream_state_t state = pa_stream_get_state(stream);
 
         if (state == PA_STREAM_READY) {
@@ -114,7 +118,7 @@ void PulsePlayer::PlaybackLoop(unsigned int sizeInBytes, const unsigned char *da
             }
         }
 
-        pa_mainloop_iterate(mainLoop, 0, NULL);
+        pa_threaded_mainloop_unlock(mainLoop);
     }
 }
 
@@ -128,8 +132,10 @@ void PulsePlayer::Free()
         pa_context_disconnect(context);
     if (context != NULL)
         pa_context_unref(context);
-    if (mainLoop != NULL)
-        pa_mainloop_free(mainLoop);
+    if (mainLoop != NULL) {
+        pa_threaded_mainloop_stop(mainLoop);
+        pa_threaded_mainloop_free(mainLoop);
+    }
 
     stream = NULL;
     context = NULL;
@@ -138,10 +144,11 @@ void PulsePlayer::Free()
     streamIsConnected = false;
 }
 
-pa_mainloop* PulsePlayer::getMainLoop()
+pa_threaded_mainloop* PulsePlayer::getMainLoop()
 {
     return mainLoop;
 }
+
 pa_context* PulsePlayer::getContext()
 {
     return context;
