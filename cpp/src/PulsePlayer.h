@@ -24,6 +24,7 @@ private:
     pa_stream* stream;
     bool contextIsConnected;
     bool streamIsConnected;
+    bool stopped;
 
     void WaitForContextConnect();
     void PlaybackLoop(unsigned int sizeInBytes, const unsigned char *dataPointer);
@@ -35,6 +36,7 @@ public:
     void Initialize();
     void Play(pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo,
         unsigned int sizeInBytes, const unsigned char *dataPointer);
+    void Stop();
     void Free();
 
     pa_threaded_mainloop* getMainLoop();

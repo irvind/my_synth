@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <ctime>
 #include <cassert>
+#include <csignal>
 
 #include <pulse/mainloop.h>
 #include <pulse/context.h>
@@ -9,6 +10,8 @@
 
 #include "yswavfile.h"
 #include "PulsePlayer.h"
+
+PulsePlayer *gPlayer = NULL;
 
 int toSigned16Bit(unsigned char leastByte, unsigned char mostByte)
 {
@@ -91,6 +94,12 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
     return format;
 }
 
+void signal_callback_handler(int signum)
+{
+    if (gPlayer != NULL)
+        gPlayer->Stop();
+}
+
 int main(int argc, char* argv[])
 {
     YsWavFile *wavFile = getWavFileFromCmdLine(argc, argv);
@@ -99,9 +108,12 @@ int main(int argc, char* argv[])
 
     std::cout << "WAV file has been parsed" << std::endl;
 
-    PulsePlayer player;
+    signal(SIGINT, signal_callback_handler);
+
+    PulsePlayer *player = new PulsePlayer();
+    gPlayer = player;
     try {
-        player.Initialize();
+        player->Initialize();
     } catch (PulsePlayerError error) {
         std::cout << "Initialization error: " << error.what() << std::endl;
         return 1;
@@ -113,13 +125,15 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    player.Play(
+    player->Play(
         format,
         wavFile->PlayBackRate(),
         wavFile->Stereo() == YSTRUE,
         wavFile->SizeInByte(),
         wavFile->DataPointer()
     );
+
+    delete player;
 
     return 0;
 }

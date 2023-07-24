@@ -18,6 +18,7 @@ PulsePlayer::PulsePlayer()
     stream = NULL;
     contextIsConnected = false;
     streamIsConnected = false;
+    stopped = false;
 }
 
 PulsePlayer::~PulsePlayer()
@@ -87,7 +88,7 @@ void PulsePlayer::PlaybackLoop(unsigned int sizeInBytes, const unsigned char *da
 {
     unsigned int playbackPtr = 0;
     double progress = -1;
-    while (1) {
+    while (!stopped) {
         double newProgress = ((double)playbackPtr / (double)sizeInBytes) * 100;
         if (newProgress > progress + 1) {
             progress = newProgress;
@@ -120,6 +121,11 @@ void PulsePlayer::PlaybackLoop(unsigned int sizeInBytes, const unsigned char *da
 
         pa_threaded_mainloop_unlock(mainLoop);
     }
+}
+
+void PulsePlayer::Stop()
+{
+    stopped = true;
 }
 
 void PulsePlayer::Free()
