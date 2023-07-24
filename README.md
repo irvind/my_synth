@@ -6,6 +6,7 @@ Code and Pulse Audio:
 * http://ysflight.in.coocan.jp/programming/audio/pulseAudioSample/e.html
 * https://github.com/OneLoneCoder/synth/blob/master/olcNoiseMaker.h#L284
 * https://www.youtube.com/watch?v=tgamhuQnOkM&ab_channel=javidx9
+* https://stackoverflow.com/questions/15535661/pulseaudio-threaded-main-loop-data-callbacks
 
 
 About WAV:
@@ -25,6 +26,8 @@ GTKMM (C++ bindings):
 * https://terminalroot.com/how-to-install-gtkmm-4-on-ubuntu-2204/ (Guide: How to install GTKMM 4 on Ubuntu 22.04)
 * https://packages.ubuntu.com/search?suite=all&section=all&arch=any&keywords=sigc%2B%2B&searchon=names
 * https://packages.ubuntu.com/search?suite=all&section=all&arch=any&keywords=glibmm&searchon=names
+* https://code.visualstudio.com/docs/cpp/c-cpp-properties-schema-reference
+* https://code.visualstudio.com/docs/cpp/customize-default-settings-cpp
 
 
 Hex converter
