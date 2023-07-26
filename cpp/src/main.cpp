@@ -57,48 +57,9 @@ void printUnsignedSignedValues()
     printf("num2 - %d\n", num2);
 }
 
-YsWavFile* getWavFileFromCmdLine(int argc, char* argv[])
-{
-    if (argc < 2)
-    {
-        std::cout << "Audio file is required" << std::endl;
-        return NULL;
-    }
-
-    YsWavFile *wavFile = new YsWavFile();
-    YSRESULT loadResult = wavFile->LoadWav(argv[1]);
-    if(loadResult != YSOK)
-    {
-        delete wavFile;
-        std::cout << "Error occured during wav file parsing" << std::endl;
-        return NULL;
-    }
-
-    return wavFile;
-}
-
-pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
-{
-    pa_sample_format_t format;
-    switch(wavFile->BitPerSample()) {
-    case 8:
-        format = PA_SAMPLE_U8;
-        break;
-    case 16:
-        format = PA_SAMPLE_S16LE;
-        break;
-    default:
-        format = PA_SAMPLE_INVALID;
-    }
-
-    return format;
-}
-
-void signalCallbackHandler(int signum)
-{
-    if (gPlayer != NULL)
-        gPlayer->Stop();
-}
+YsWavFile* getWavFileFromCmdLine(int argc, char* argv[]);
+void signalCallbackHandler(int signum);
+pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile);
 
 int runAudioPlayback(int argc, char* argv[])
 {
@@ -136,6 +97,47 @@ int runAudioPlayback(int argc, char* argv[])
     delete player;
 
     return 0;
+}
+
+YsWavFile* getWavFileFromCmdLine(int argc, char* argv[])
+{
+    if (argc < 2) {
+        std::cout << "Audio file is required" << std::endl;
+        return NULL;
+    }
+
+    YsWavFile *wavFile = new YsWavFile();
+    YSRESULT loadResult = wavFile->LoadWav(argv[1]);
+    if (loadResult != YSOK) {
+        delete wavFile;
+        std::cout << "Error occured during wav file parsing" << std::endl;
+        return NULL;
+    }
+
+    return wavFile;
+}
+
+void signalCallbackHandler(int signum)
+{
+    if (gPlayer != NULL)
+        gPlayer->Stop();
+}
+
+pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
+{
+    pa_sample_format_t format;
+    switch(wavFile->BitPerSample()) {
+    case 8:
+        format = PA_SAMPLE_U8;
+        break;
+    case 16:
+        format = PA_SAMPLE_S16LE;
+        break;
+    default:
+        format = PA_SAMPLE_INVALID;
+    }
+
+    return format;
 }
 
 int main(int argc, char* argv[])
