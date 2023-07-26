@@ -5,7 +5,7 @@ project(PulseAudioWavDemo)
 
 pkg_check_modules(GTKMM40 REQUIRED gtkmm-4.0)
 
-add_executable(PulseAudioWavDemo main.cpp yswavfile.cpp PulsePlayer.cpp)
+add_executable(PulseAudioWavDemo main.cpp yswavfile.cpp PulsePlayer.cpp MainWindow.cpp)
 
 target_include_directories(PulseAudioWavDemo PUBLIC "${PROJECT_BINARY_DIR}")
 target_include_directories(PulseAudioWavDemo PUBLIC ${GTKMM40_INCLUDE_DIRS})

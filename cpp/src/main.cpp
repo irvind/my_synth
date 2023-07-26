@@ -8,8 +8,11 @@
 #include <pulse/context.h>
 #include <pulse/stream.h>
 
+#include <gtkmm/application.h>
+
 #include "yswavfile.h"
 #include "PulsePlayer.h"
+#include "MainWindow.h"
 
 PulsePlayer *gPlayer = NULL;
 
@@ -142,6 +145,9 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
 
 int main(int argc, char* argv[])
 {
-    int returnCode = runAudioPlayback(argc, argv);
-    return returnCode;
+    auto app = Gtk::Application::create("org.gtkmm.audioplayback");
+    return app->make_window_and_run<MainWindow>(argc, argv);
+
+    // int returnCode = runAudioPlayback(argc, argv);
+    // return returnCode;
 }
