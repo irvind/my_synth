@@ -94,13 +94,13 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
     return format;
 }
 
-void signal_callback_handler(int signum)
+void signalCallbackHandler(int signum)
 {
     if (gPlayer != NULL)
         gPlayer->Stop();
 }
 
-int main(int argc, char* argv[])
+int runAudioPlayback(int argc, char* argv[])
 {
     YsWavFile *wavFile = getWavFileFromCmdLine(argc, argv);
     if (wavFile == NULL)
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 
     std::cout << "WAV file has been parsed" << std::endl;
 
-    signal(SIGINT, signal_callback_handler);
+    signal(SIGINT, signalCallbackHandler);
 
     PulsePlayer *player = new PulsePlayer();
     gPlayer = player;
@@ -136,4 +136,10 @@ int main(int argc, char* argv[])
     delete player;
 
     return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    int returnCode = runAudioPlayback(argc, argv);
+    return returnCode;
 }
