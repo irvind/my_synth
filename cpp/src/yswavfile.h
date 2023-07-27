@@ -4,6 +4,8 @@
 
 #include <cstddef>
 
+#include <pulse/stream.h>
+
 #ifndef YSRESULT_IS_DEFINED
 #define YSRESULT_IS_DEFINED
 /*! Enum for processing result. */
@@ -50,6 +52,7 @@ public:
 	unsigned int BytePerSample(void) const;
 	unsigned int PlayBackRate(void) const;
 	unsigned int SizeInByte(void) const;
+	pa_sample_format_t SampleFormat(void) const;
 	YSBOOL IsSigned(void) const;
 	const unsigned char *DataPointer(void) const;
 	const unsigned char *DataPointerAtTimeStep(unsigned int ts) const;

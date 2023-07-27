@@ -68,6 +68,23 @@ unsigned int YsWavFile::SizeInByte(void) const
     return sizeInBytes;
 }
 
+pa_sample_format_t YsWavFile::SampleFormat(void) const
+{
+    pa_sample_format_t format;
+    switch(BitPerSample()) {
+    case 8:
+        format = PA_SAMPLE_U8;
+        break;
+    case 16:
+        format = PA_SAMPLE_S16LE;
+        break;
+    default:
+        format = PA_SAMPLE_INVALID;
+    }
+
+    return format;
+}
+
 YSBOOL YsWavFile::IsSigned(void) const
 {
     return isSigned;

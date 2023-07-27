@@ -26,16 +26,28 @@ private:
     bool streamIsConnected;
     bool stopped;
 
+    unsigned int playbackByteIndex;
+    unsigned int playbackSizeInBytes;
+    const unsigned char *playbackDataPointer;
+
     void WaitForContextConnect();
     void PlaybackLoop(unsigned int sizeInBytes, const unsigned char *dataPointer);
+    void CreateAndConnectStream(pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo);
 
 public:
     PulsePlayer();
     ~PulsePlayer();
 
     void Initialize();
-    void Play(pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo,
-        unsigned int sizeInBytes, const unsigned char *dataPointer);
+    void Play(
+        pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo,
+        unsigned int sizeInBytes, const unsigned char *dataPointer
+    );
+    void PlayStart(
+        pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo,
+        unsigned int sizeInBytes, const unsigned char *dataPointer
+    );
+    bool PlayTick();
     void Stop();
     void Free();
 

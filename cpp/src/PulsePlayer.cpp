@@ -63,9 +63,11 @@ void PulsePlayer::WaitForContextConnect()
         throw PulsePlayerError("PulseAudio context is not ready for too long");
 }
 
-void PulsePlayer::Play(pa_sample_format_t sampleFormat, unsigned int playbackRate, bool isStereo,
-    unsigned int sizeInBytes, const unsigned char *dataPointer)
-{
+void PulsePlayer::CreateAndConnectStream(
+    pa_sample_format_t sampleFormat,
+    unsigned int playbackRate,
+    bool isStereo
+) {
     pa_sample_spec sampleSpec = {
         sampleFormat,
         playbackRate,
@@ -80,7 +82,16 @@ void PulsePlayer::Play(pa_sample_format_t sampleFormat, unsigned int playbackRat
         throw PulsePlayerError("Cannot connect PulseAudio stream to the sink");
 
     streamIsConnected = true;
+}
 
+void PulsePlayer::Play(
+    pa_sample_format_t sampleFormat,
+    unsigned int playbackRate,
+    bool isStereo,
+    unsigned int sizeInBytes,
+    const unsigned char *dataPointer
+) {
+    CreateAndConnectStream(sampleFormat, playbackRate, isStereo);
     PlaybackLoop(sizeInBytes, dataPointer);
 }
 
@@ -121,6 +132,50 @@ void PulsePlayer::PlaybackLoop(unsigned int sizeInBytes, const unsigned char *da
 
         pa_threaded_mainloop_unlock(mainLoop);
     }
+}
+
+void PulsePlayer::PlayStart(
+    pa_sample_format_t sampleFormat,
+    unsigned int playbackRate,
+    bool isStereo,
+    unsigned int sizeInBytes,
+    const unsigned char *dataPointer
+) {
+    CreateAndConnectStream(sampleFormat, playbackRate, isStereo);
+    playbackByteIndex = 0;
+    playbackSizeInBytes = sizeInBytes;
+    playbackDataPointer = dataPointer;
+}
+
+bool PulsePlayer::PlayTick()
+{
+    if (stopped || (playbackByteIndex >= playbackSizeInBytes)) {
+        return true;
+    }
+
+    pa_threaded_mainloop_lock(mainLoop);
+
+    pa_stream_state_t state = pa_stream_get_state(stream);
+    if (state == PA_STREAM_READY) {
+        const size_t writableSize = pa_stream_writable_size(stream);
+
+        const size_t sizeRemain = playbackSizeInBytes - playbackByteIndex;
+        const size_t writeSize = (sizeRemain < writableSize ? sizeRemain : writableSize);
+        if (writeSize > 0) {
+            pa_stream_write(
+                stream,
+                playbackDataPointer + playbackByteIndex,
+                writeSize,
+                NULL,
+                0,
+                PA_SEEK_RELATIVE
+            );
+            playbackDataPointer += writeSize;
+        }
+    }
+
+    pa_threaded_mainloop_unlock(mainLoop);
+    return false;
 }
 
 void PulsePlayer::Stop()

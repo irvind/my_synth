@@ -145,9 +145,18 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
 
 int main(int argc, char* argv[])
 {
-    auto app = Gtk::Application::create("org.gtkmm.audioplayback");
-    return app->make_window_and_run<MainWindow>(argc, argv);
+    PulsePlayer *player = new PulsePlayer();
+    gPlayer = player;
+    try {
+        player->Initialize();
+    } catch (PulsePlayerError error) {
+        std::cout << "Initialization error: " << error.what() << std::endl;
+        return 1;
+    }
 
-    // int returnCode = runAudioPlayback(argc, argv);
-    // return returnCode;
+    auto app = Gtk::Application::create("org.gtkmm.audioplayback");
+    int returnCode = app->make_window_and_run<MainWindow>(argc, argv);
+
+    delete player;
+    return returnCode;
 }
