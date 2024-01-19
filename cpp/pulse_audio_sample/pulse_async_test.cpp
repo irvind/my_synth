@@ -13,36 +13,34 @@
 
 #include <yswavfile.h>
 
-static YSRESULT YsPulseAudioWaitForConnectionEstablished(pa_context *paContext,pa_mainloop *paMainLoop,time_t timeOut)
+static YSRESULT YsPulseAudioWaitForConnectionEstablished(pa_context *paContext, pa_mainloop *paMainLoop, time_t timeOut)
 {
-	time_t timeLimit=time(NULL)+timeOut;
-	while(timeLimit>=time(NULL))
+	time_t timeLimit = time(NULL) + timeOut;
+	while (timeLimit >= time(NULL))
 	{
-		pa_mainloop_iterate(paMainLoop,0,NULL);
-		if(PA_CONTEXT_READY==pa_context_get_state(paContext))
-		{
+		pa_mainloop_iterate(paMainLoop, 0, NULL);
+		if (PA_CONTEXT_READY == pa_context_get_state(paContext))
 			return YSOK;
-		}
 	}
+
 	return YSERR;
 }
 
-int main(int ac,char *av[])
+int main(int ac, char *av[])
 {
 	YsWavFile wavFile;
-	if(2>ac || YSOK!=wavFile.LoadWav(av[1]))
+	if(2 > ac || wavFile.LoadWav(av[1]) != YSOK)
 	{
-		fprintf(stderr,"Cannot open wave file.\n");
+		fprintf(stderr, "Cannot open wave file.\n");
 		return 1;
 	}
 
-
 	// Test Resampling >>
 	printf("Before Resampling:\n");
-	printf("Bit per sample: %d\n",wavFile.BitPerSample());
-	printf("Stereo: %d\n",wavFile.Stereo());
-	printf("Playback Rate: %d\n",wavFile.PlayBackRate());
-	printf("Signed: %d\n",wavFile.IsSigned());
+	printf("Bit per sample: %d\n", wavFile.BitPerSample());
+	printf("Stereo: %d\n", wavFile.Stereo());
+	printf("Playback Rate: %d\n", wavFile.PlayBackRate());
+	printf("Signed: %d\n", wavFile.IsSigned());
 
 	wavFile.ConvertTo16Bit();
 	wavFile.ConvertToSigned();
@@ -51,123 +49,104 @@ int main(int ac,char *av[])
 	wavFile.ConvertToMono();
 
 	printf("After Resampling:\n");
-	printf("Bit per sample: %d\n",wavFile.BitPerSample());
-	printf("Stereo: %d\n",wavFile.Stereo());
-	printf("Playback Rate: %d\n",wavFile.PlayBackRate());
-	printf("Signed: %d\n",wavFile.IsSigned());
+	printf("Bit per sample: %d\n" ,wavFile.BitPerSample());
+	printf("Stereo: %d\n", wavFile.Stereo());
+	printf("Playback Rate: %d\n", wavFile.PlayBackRate());
+	printf("Signed: %d\n", wavFile.IsSigned());
 	// << Test Resampling
 
-
-
-	pa_mainloop *paMainLoop=pa_mainloop_new();  // Pennsylvania Main loop?
-	if(NULL==paMainLoop)
+	pa_mainloop *paMainLoop = pa_mainloop_new();  // Pennsylvania Main loop?
+	if(paMainLoop == NULL)
 	{
-		fprintf(stderr,"Cannot create main loop.\n");
+		fprintf(stderr, "Cannot create main loop.\n");
 		return 1;
 	}
 
-	pa_context *paContext=pa_context_new(pa_mainloop_get_api(paMainLoop),"YsPulseAudioCon");
-	if(NULL==paContext)
+	pa_context *paContext = pa_context_new(pa_mainloop_get_api(paMainLoop), "YsPulseAudioCon");
+	if(paContext == NULL)
 	{
-		fprintf(stderr,"Cannot create context.\n");
+		fprintf(stderr, "Cannot create context.\n");
 		return 1;
 	}
 
 	printf("Mainloop and Context Created.\n");
 
 	// pa_context_set_state_callback(paContext,YsPulseAudioConnectionCallBack,NULL);
-	pa_context_connect(paContext,NULL,(pa_context_flags_t)0,NULL);
+	pa_context_connect(paContext, NULL, (pa_context_flags_t)0, NULL);
 
 	// I seem to be able to either wait for call back or poll context state until it is ready.
-	YsPulseAudioWaitForConnectionEstablished(paContext,paMainLoop,5);
+	YsPulseAudioWaitForConnectionEstablished(paContext, paMainLoop, 5);
 
 	printf("I hope it is connected.\n");
-
-
-
 
 	pa_sample_format_t format;
 	switch(wavFile.BitPerSample())
 	{
 	case 8:
-		if(YSTRUE==wavFile.IsSigned())
-		{
+		if(wavFile.IsSigned() == YSTRUE)
 			wavFile.ConvertToUnsigned();
-		}
-		format=PA_SAMPLE_U8;
+
+		format = PA_SAMPLE_U8;
 		break;
 	case 16:
-		if(YSTRUE!=wavFile.IsSigned())
-		{
+		if(wavFile.IsSigned() != YSTRUE)
 			wavFile.ConvertToSigned();
-		}
-		format=PA_SAMPLE_S16LE;
+
+		format = PA_SAMPLE_S16LE;
 		break;
 	}
-	const int rate=wavFile.PlayBackRate();
-	const int nChannel=(YSTRUE==wavFile.Stereo() ? 2 : 1);
+	const int rate = wavFile.PlayBackRate();
+	const int nChannel = (YSTRUE == wavFile.Stereo() ? 2 : 1);
+	const pa_sample_spec ss={format, rate, nChannel};
 
-    const pa_sample_spec ss=
-    {
-        format,
-        rate,
-        nChannel
-    };
+	pa_stream *paStream = pa_stream_new(paContext, "YsStream", &ss, NULL);
 
-	pa_stream *paStream=pa_stream_new(paContext,"YsStream",&ss,NULL);
-
-	if(NULL!=paStream)
-	{
+	if(paStream != NULL)
 		printf("Stream created!  Getting there!\n");
-	}
-
 	pa_stream_connect_playback(paStream,NULL,NULL,(pa_stream_flags_t)0,NULL,NULL);
-
-
 
 	printf("Entering main loop.\n");
 
-	unsigned int playBackPtr=0;
-	YSBOOL checkForUnderflow=YSTRUE;
+	unsigned int playBackPtr = 0;
+	YSBOOL checkForUnderflow = YSTRUE;
 
-	const time_t t0=time(NULL);
-	time_t prevT=time(NULL)-1;
+	const time_t t0 = time(NULL);
+	time_t prevT = time(NULL) - 1;
 	for(;;)
 	{
-		if(time(NULL)!=prevT)
+		if(prevT != time(NULL))
 		{
 			printf("Ping...\n");
-			prevT=time(NULL);
+			prevT = time(NULL);
 		}
 
-		if(PA_STREAM_READY==pa_stream_get_state(paStream))
+		if(pa_stream_get_state(paStream) == PA_STREAM_READY)
 		{
-			const size_t writableSize=pa_stream_writable_size(paStream);
-			const size_t sizeRemain=wavFile.SizeInByte()-playBackPtr;
-			const size_t writeSize=(sizeRemain<writableSize ? sizeRemain : writableSize);
+			const size_t writableSize = pa_stream_writable_size(paStream);
+			const size_t sizeRemain = wavFile.SizeInByte() - playBackPtr;
+			const size_t writeSize = (sizeRemain<writableSize ? sizeRemain : writableSize);
 
-			if(0<writeSize)
+			if (writeSize > 0)
 			{
-				printf("Write %d\n",(int)writeSize);
-				pa_stream_write(paStream,wavFile.DataPointer()+playBackPtr,writeSize,NULL,0,PA_SEEK_RELATIVE);
-				playBackPtr+=writeSize;
+				printf("Write %d\n", (int)writeSize);
+				pa_stream_write(paStream, wavFile.DataPointer() + playBackPtr, writeSize, NULL, 0, PA_SEEK_RELATIVE);
+				playBackPtr += writeSize;
 			}
 		}
 
-		if(wavFile.SizeInByte()<=playBackPtr &&
-		   0<=pa_stream_get_underflow_index(paStream) &&
-		   YSTRUE==checkForUnderflow)
-		{
+		if(
+			playBackPtr => wavFile.SizeInByte() &&
+		   	pa_stream_get_underflow_index(paStream) >= 0 &&
+		   	checkForUnderflow == YSTRUE
+		) {
 			printf("Underflow detected. (Probably the playback is done.)\n");
-			checkForUnderflow=YSFALSE;
+			checkForUnderflow = YSFALSE;
 		}
 
-		pa_mainloop_iterate(paMainLoop,0,NULL);
+		pa_mainloop_iterate(paMainLoop, 0, NULL);
 
-		if(t0+5<=time(NULL))
-		{
+		if(time(NULL) => t0 + 5)
 			break;
-		}
 	}
 
 	pa_stream_disconnect(paStream);
