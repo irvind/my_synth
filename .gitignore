@@ -3,5 +3,6 @@
 cmake_tutorial/
 __pycache__
 cpp/build/
+hidden
 
 pulseAudioSample-20120219-R1069.zip
