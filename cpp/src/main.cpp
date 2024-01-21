@@ -15,33 +15,32 @@
 #include "MainWindow.h"
 
 PulsePlayer *gPlayer = NULL;
+bool useGtk = true;
 
-int toSigned16Bit(unsigned char leastByte, unsigned char mostByte)
-{
-    int val = leastByte + mostByte*256;
-    if(val >= 32768)
-        val -= 65536;
+// int toSigned16Bit(unsigned char leastByte, unsigned char mostByte)
+// {
+//     int val = leastByte + mostByte*256;
+//     if(val >= 32768)
+//         val -= 65536;
+//     return val;
+// }
 
-    return val;
-}
-
-void printWavDataPositions(YsWavFile *wavFile, int posCount)
-{
-    const unsigned char *ptr = wavFile->DataPointer();
-
-    for (int i = 0; i < posCount; i++)
-        printf(
-            "pos %3d: unsigned - %4u %4u / signed - %4d %4d / int - %d\n",
-            i, ptr[i*2+1], ptr[i*2], (char)ptr[i*2+1], (char)ptr[i*2],
-            toSigned16Bit(ptr[i*2], ptr[i*2+1])
-        );
-}
+// void printWavDataPositions(YsWavFile *wavFile, int posCount)
+// {
+//     const unsigned char *ptr = wavFile->DataPointer();
+//     for (int i = 0; i < posCount; i++)
+//         printf(
+//             "pos %3d: unsigned - %4u %4u / signed - %4d %4d / int - %d\n",
+//             i, ptr[i*2+1], ptr[i*2], (char)ptr[i*2+1], (char)ptr[i*2],
+//             toSigned16Bit(ptr[i*2], ptr[i*2+1])
+//         );
+// }
 
 YsWavFile* getWavFileFromCmdLine(int argc, char* argv[]);
 void signalCallbackHandler(int signum);
 pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile);
 
-int runAudioPlayback(int argc, char* argv[])
+int playAudioFromCmdLine(int argc, char* argv[])
 {
     YsWavFile *wavFile = getWavFileFromCmdLine(argc, argv);
     if (wavFile == NULL)
@@ -120,7 +119,7 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
     return format;
 }
 
-int main(int argc, char* argv[])
+int playAudioFromGtkWindow(int argc, char* argv[])
 {
     PulsePlayer *player = new PulsePlayer();
     gPlayer = player;
@@ -132,8 +131,17 @@ int main(int argc, char* argv[])
     }
 
     auto app = Gtk::Application::create("org.gtkmm.audioplayback");
+    // TODO: pass player to window
     int returnCode = app->make_window_and_run<MainWindow>(argc, argv);
 
     delete player;
     return returnCode;
+}
+
+int main(int argc, char* argv[])
+{
+    if (useGtk)
+        return playAudioFromGtkWindow(argc, argv);
+    else
+        return playAudioFromCmdLine(argc, argv);
 }
