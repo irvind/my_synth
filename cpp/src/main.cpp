@@ -122,7 +122,6 @@ pa_sample_format_t getSampleFormatFromFile(YsWavFile *wavFile)
 int playAudioFromGtkWindow(int argc, char* argv[])
 {
     PulsePlayer *player = new PulsePlayer();
-    gPlayer = player;
     try {
         player->Initialize();
     } catch (PulsePlayerError error) {
@@ -131,10 +130,8 @@ int playAudioFromGtkWindow(int argc, char* argv[])
     }
 
     auto app = Gtk::Application::create("org.gtkmm.audioplayback");
-    // TODO: pass player to window
-    int returnCode = app->make_window_and_run<MainWindow>(argc, argv);
+    int returnCode = app->make_window_and_run<MainWindow>(argc, argv, player);
 
-    delete player;
     return returnCode;
 }
 

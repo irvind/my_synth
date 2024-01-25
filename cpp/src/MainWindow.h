@@ -6,6 +6,7 @@
 #include <gtkmm/application.h>
 
 #include "yswavfile.h"
+#include "PulsePlayer.h"
 
 class MainWindow : public Gtk::Window
 {
@@ -13,11 +14,12 @@ protected:
     Gtk::Button mButton;
     bool isPlaying;
     YsWavFile *wavFile;
+    PulsePlayer *player;
 
     void onButtonClicked();
     bool onIdle();
 
 public:
-    MainWindow();
+    MainWindow(PulsePlayer *inPlayer);
     ~MainWindow() override;
 };

@@ -4,13 +4,14 @@
 #include "MainWindow.h"
 #include "PulsePlayer.h"
 
-extern PulsePlayer *gPlayer;
+// extern PulsePlayer *gPlayer;
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(PulsePlayer *inPlayer)
 : mButton("Play")
 {
     isPlaying = false;
     wavFile = NULL;
+    player = inPlayer;
     set_title("PulseAudio playback");
     // set_default_size(800, 450);
 
@@ -25,11 +26,13 @@ MainWindow::~MainWindow()
     std::cout << "MainWindow destructor" << std::endl;
     if (wavFile != NULL)
         delete wavFile;
+    if (player != NULL)
+        delete player;
 }
 
 void MainWindow::onButtonClicked()
 {
-    if (isPlaying || gPlayer == NULL)
+    if (isPlaying || player == NULL)
         return;
 
     wavFile = new YsWavFile();
@@ -40,7 +43,7 @@ void MainWindow::onButtonClicked()
         return;
     }
 
-    gPlayer->PlayStart(
+    player->PlayStart(
         wavFile->SampleFormat(),
         wavFile->PlayBackRate(),
         wavFile->Stereo() == YSTRUE,
@@ -56,7 +59,7 @@ bool MainWindow::onIdle()
     if (!isPlaying)
         return false;
 
-    bool ended = gPlayer->PlayTick();
+    bool ended = player->PlayTick();
     if (ended) {
         delete wavFile;
         wavFile = NULL;
