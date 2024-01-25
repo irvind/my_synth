@@ -78,7 +78,10 @@ void PulsePlayer::CreateAndConnectStream(
     if (stream == NULL)
         throw PulsePlayerError("Cannot create PulseAudio stream");
 
-    if (pa_stream_connect_playback(stream, NULL, NULL, (pa_stream_flags_t)0, NULL, NULL) != 0)
+    pa_cvolume vol;
+    pa_cvolume_set(&vol, 2, PA_VOLUME_NORM / 2);
+
+    if (pa_stream_connect_playback(stream, NULL, NULL, (pa_stream_flags_t)0, &vol, NULL) != 0)
         throw PulsePlayerError("Cannot connect PulseAudio stream to the sink");
 
     streamIsConnected = true;
